@@ -1,0 +1,8 @@
+[package]
+name = "trombone"
+version = "0.1.0"
+edition = "2024"
+description = "A pure Rust-first low-latency audio I/O library targeting Android and beyond."
+license = "Apache-2.0"
+
+[dependencies]
