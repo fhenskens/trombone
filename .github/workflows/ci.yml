@@ -31,6 +31,11 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpipewire-0.3-dev pkg-config
+
       - name: cargo fmt --check
         run: cargo fmt --check
 
@@ -124,3 +129,28 @@ jobs:
             cargo build --target x86_64-linux-android --release --example oboe_bench --features oboe-bench
           RUSTFLAGS="-Clink-arg=-Wl,-Bstatic -Clink-arg=-lc++_static -Clink-arg=-lc++abi -Clink-arg=-Wl,-Bdynamic" \
             cargo build --target aarch64-linux-android --release --example oboe_bench --features oboe-bench
+
+  linux-runtime:
+    name: Linux runtime checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Linux audio dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libasound2-plugins alsa-utils pulseaudio-utils
+
+      - name: Run Linux runtime tests
+        run: |
+          chmod +x scripts/run-linux.sh scripts/test-linux-runtime.sh
+          ./scripts/test-linux-runtime.sh
