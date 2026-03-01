@@ -329,6 +329,7 @@ impl crate::core::stream::StreamBackendOps for AAudioBackendStream {
                 frame_position: timestamp_ok.then_some(frame_position),
                 estimated_latency_frames: latency_frames,
                 estimated_latency_ns: latency_ns,
+                ..Default::default()
             },
         }
     }

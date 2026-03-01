@@ -6,11 +6,17 @@ on:
     branches:
       - main
       - prod
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   checks:
     name: Rust checks (${{ matrix.rust }})
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -34,7 +40,7 @@ jobs:
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpipewire-0.3-dev pkg-config
+          sudo apt-get install -y libasound2-dev libpipewire-0.3-dev pkg-config
 
       - name: cargo fmt --check
         run: cargo fmt --check
@@ -50,7 +56,9 @@ jobs:
 
   android-runtime:
     name: Android runtime checks
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,17 +76,31 @@ jobs:
 
       - name: Install Android dependencies
         run: |
-          sdkmanager --install "platform-tools" "ndk;29.0.14206865"
+          retry() {
+            local max_attempts="$1"
+            shift
+            local attempt=1
+            until "$@"; do
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                return 1
+              fi
+              attempt=$((attempt + 1))
+              sleep 10
+            done
+          }
+          retry 3 sdkmanager --install "platform-tools" "ndk;29.0.14206865"
           rustup target add x86_64-linux-android
 
       - name: Run runtime tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 30
           target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot
+          arch: x86
+          profile: Nexus 6
+          emulator-boot-timeout: 1200
+          disable-linux-hw-accel: true
+          emulator-options: -no-window -gpu off -no-snapshot -no-audio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: |
             chmod +x scripts/test-android-runtime.sh scripts/run-android.sh scripts/build-android.sh
@@ -90,6 +112,7 @@ jobs:
   android-oboe-build:
     name: Android oboe_bench build
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -107,12 +130,29 @@ jobs:
 
       - name: Install Android dependencies
         run: |
-          sdkmanager --install "platform-tools" "ndk;29.0.14206865"
+          retry() {
+            local max_attempts="$1"
+            shift
+            local attempt=1
+            until "$@"; do
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                return 1
+              fi
+              attempt=$((attempt + 1))
+              sleep 10
+            done
+          }
+          retry 3 sdkmanager --install "platform-tools" "ndk;29.0.14206865"
           rustup target add x86_64-linux-android aarch64-linux-android
 
       - name: Build oboe_bench examples
         run: |
-          chmod +x scripts/build-android.sh scripts/run-android.sh
+          chmod +x \
+            scripts/build-android.sh \
+            scripts/run-android.sh \
+            scripts/ndk-linker-x86_64.sh \
+            scripts/ndk-linker-aarch64.sh \
+            scripts/ndk-ar.sh
           export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
           export ANDROID_PLATFORM_API=24
@@ -120,8 +160,10 @@ jobs:
           toolchain_bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export CC_x86_64_linux_android="$toolchain_bin/x86_64-linux-android24-clang"
           export CXX_x86_64_linux_android="$toolchain_bin/x86_64-linux-android24-clang++"
+          export AR_x86_64_linux_android="$toolchain_bin/llvm-ar"
           export CC_aarch64_linux_android="$toolchain_bin/aarch64-linux-android24-clang"
           export CXX_aarch64_linux_android="$toolchain_bin/aarch64-linux-android24-clang++"
+          export AR_aarch64_linux_android="$toolchain_bin/llvm-ar"
           export CXXFLAGS_x86_64_linux_android="-fno-sized-deallocation"
           export CXXFLAGS_aarch64_linux_android="-fno-sized-deallocation"
 
@@ -133,6 +175,7 @@ jobs:
   linux-runtime:
     name: Linux runtime checks
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4

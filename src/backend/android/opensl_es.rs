@@ -867,17 +867,18 @@ impl crate::core::stream::StreamBackendOps for OpenSlesOutputStream {
         }
         let mut first_error: Option<AudioError> = None;
         unsafe {
-            if let Err(error) = check_result(call_set_play_state(
-                self.play_itf,
-                ffi::SL_PLAYSTATE_STOPPED,
-            )) && first_error.is_none()
-            {
-                first_error = Some(error);
+            if first_error.is_none() {
+                if let Err(error) = check_result(call_set_play_state(
+                    self.play_itf,
+                    ffi::SL_PLAYSTATE_STOPPED,
+                )) {
+                    first_error = Some(error);
+                }
             }
-            if let Err(error) = check_result(call_queue_clear(self.queue_itf))
-                && first_error.is_none()
-            {
-                first_error = Some(error);
+            if first_error.is_none() {
+                if let Err(error) = check_result(call_queue_clear(self.queue_itf)) {
+                    first_error = Some(error);
+                }
             }
         }
         self.started = false;
@@ -911,6 +912,7 @@ impl crate::core::stream::StreamBackendOps for OpenSlesOutputStream {
                     latency_frames,
                     self.callback_state.sample_rate_hz,
                 )),
+                ..Default::default()
             },
         }
     }
@@ -994,17 +996,18 @@ impl crate::core::stream::StreamBackendOps for OpenSlesInputStream {
         }
         let mut first_error: Option<AudioError> = None;
         unsafe {
-            if let Err(error) = check_result(call_set_record_state(
-                self.record_itf,
-                ffi::SL_RECORDSTATE_STOPPED,
-            )) && first_error.is_none()
-            {
-                first_error = Some(error);
+            if first_error.is_none() {
+                if let Err(error) = check_result(call_set_record_state(
+                    self.record_itf,
+                    ffi::SL_RECORDSTATE_STOPPED,
+                )) {
+                    first_error = Some(error);
+                }
             }
-            if let Err(error) = check_result(call_queue_clear(self.queue_itf))
-                && first_error.is_none()
-            {
-                first_error = Some(error);
+            if first_error.is_none() {
+                if let Err(error) = check_result(call_queue_clear(self.queue_itf)) {
+                    first_error = Some(error);
+                }
             }
         }
         self.started = false;
@@ -1038,6 +1041,7 @@ impl crate::core::stream::StreamBackendOps for OpenSlesInputStream {
                     latency_frames,
                     self.callback_state.sample_rate_hz,
                 )),
+                ..Default::default()
             },
         }
     }
