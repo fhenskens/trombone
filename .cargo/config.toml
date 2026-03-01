@@ -1,0 +1,7 @@
+[target.x86_64-linux-android]
+linker = "scripts/ndk-linker-x86_64.sh"
+ar = "scripts/ndk-ar.sh"
+
+[target.aarch64-linux-android]
+linker = "scripts/ndk-linker-aarch64.sh"
+ar = "scripts/ndk-ar.sh"

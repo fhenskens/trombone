@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - prod
+
+jobs:
+  checks:
+    name: Rust checks (${{ matrix.rust }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust:
+          - "1.85.0"
+          - stable
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt --check
+        run: cargo fmt --check
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: cargo test
+        run: cargo test
+
+      - name: cargo check --all-targets
+        run: cargo check --all-targets
+
+  android-runtime:
+    name: Android runtime checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android dependencies
+        run: |
+          sdkmanager --install "platform-tools" "ndk;29.0.14206865"
+          rustup target add x86_64-linux-android
+
+      - name: Run runtime tests on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot
+          disable-animations: true
+          script: |
+            chmod +x scripts/test-android-runtime.sh scripts/run-android.sh scripts/build-android.sh
+            export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+            export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+            export ANDROID_RUNTIME_REQUIRED=1
+            ./scripts/test-android-runtime.sh
+
+  android-oboe-build:
+    name: Android oboe_bench build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android dependencies
+        run: |
+          sdkmanager --install "platform-tools" "ndk;29.0.14206865"
+          rustup target add x86_64-linux-android aarch64-linux-android
+
+      - name: Build oboe_bench examples
+        run: |
+          chmod +x scripts/build-android.sh scripts/run-android.sh
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+          export ANDROID_PLATFORM_API=24
+
+          toolchain_bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC_x86_64_linux_android="$toolchain_bin/x86_64-linux-android24-clang"
+          export CXX_x86_64_linux_android="$toolchain_bin/x86_64-linux-android24-clang++"
+          export CC_aarch64_linux_android="$toolchain_bin/aarch64-linux-android24-clang"
+          export CXX_aarch64_linux_android="$toolchain_bin/aarch64-linux-android24-clang++"
+          export CXXFLAGS_x86_64_linux_android="-fno-sized-deallocation"
+          export CXXFLAGS_aarch64_linux_android="-fno-sized-deallocation"
+
+          RUSTFLAGS="-Clink-arg=-Wl,-Bstatic -Clink-arg=-lc++_static -Clink-arg=-lc++abi -Clink-arg=-Wl,-Bdynamic" \
+            cargo build --target x86_64-linux-android --release --example oboe_bench --features oboe-bench
+          RUSTFLAGS="-Clink-arg=-Wl,-Bstatic -Clink-arg=-lc++_static -Clink-arg=-lc++abi -Clink-arg=-Wl,-Bdynamic" \
+            cargo build --target aarch64-linux-android --release --example oboe_bench --features oboe-bench

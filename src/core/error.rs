@@ -1,20 +1,24 @@
-//! Error domain for stream setup and runtime.
+//! Errors for stream setup and runtime.
 
-/// Library-wide result type.
+/// Result type used by this library.
 pub type Result<T> = core::result::Result<T, AudioError>;
 
-/// Error type for backend and stream operations.
+/// Errors from backend and stream operations.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AudioError {
-    /// Requested configuration is unsupported by the backend.
+    /// The backend does not support this config.
     UnsupportedConfig,
-    /// Stream state transition was invalid for current state.
+    /// The requested state change is not valid right now.
     InvalidStateTransition,
-    /// Underlying backend returned an error code.
+    /// The backend returned an error code.
     BackendFailure {
-        /// Backend-native error value.
+        /// Native backend error value.
         code: i32,
     },
-    /// Operation is not yet implemented in current backend.
+    /// No render callback has been set on the stream.
+    RenderCallbackNotSet,
+    /// No capture callback has been set on the stream.
+    CaptureCallbackNotSet,
+    /// This operation is not implemented yet.
     NotImplemented,
 }

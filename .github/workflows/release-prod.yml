@@ -1,0 +1,48 @@
+name: Release on Prod
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'prod' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout prod commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Read crate version
+        id: version
+        run: |
+          version="$(sed -nE 's/^version = "([^"]+)"/\1/p' Cargo.toml | head -n1)"
+          if [ -z "$version" ]; then
+            echo "error: could not read version from Cargo.toml" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build release tag
+        id: tag
+        run: |
+          short_sha="$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)"
+          tag="v${{ steps.version.outputs.version }}-prod.${{ github.run_number }}+${short_sha}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          target_commitish: ${{ github.event.workflow_run.head_sha }}
+          name: ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
