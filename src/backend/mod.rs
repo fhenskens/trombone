@@ -1,6 +1,8 @@
 //! Backend traits and platform modules.
 
 pub mod android;
+pub mod linux;
+pub mod windows;
 
 use crate::core::config::StreamConfig;
 use crate::core::error::Result;

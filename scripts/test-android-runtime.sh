@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/android-env.sh
+source "${SCRIPT_DIR}/lib/android-env.sh"
+
 fail() {
   echo "error: $*" >&2
   exit 1
@@ -8,22 +12,6 @@ fail() {
 
 is_required() {
   [ "${ANDROID_RUNTIME_REQUIRED:-0}" = "1" ]
-}
-
-find_adb() {
-  if command -v adb >/dev/null 2>&1; then
-    command -v adb
-    return
-  fi
-  if [ -n "${ANDROID_SDK_ROOT:-}" ] && [ -x "${ANDROID_SDK_ROOT}/platform-tools/adb" ]; then
-    echo "${ANDROID_SDK_ROOT}/platform-tools/adb"
-    return
-  fi
-  if [ -x "/mnt/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe" ]; then
-    echo "/mnt/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe"
-    return
-  fi
-  return 1
 }
 
 adb_devices_snapshot() {

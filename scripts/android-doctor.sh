@@ -1,53 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/android-env.sh
+source "${SCRIPT_DIR}/lib/android-env.sh"
+
 ok() { echo "[OK]  $*"; }
 warn() { echo "[WARN] $*"; }
 err() { echo "[ERR] $*"; }
-
-find_adb() {
-  if command -v adb >/dev/null 2>&1; then
-    command -v adb
-    return
-  fi
-  if [ -n "${ADB:-}" ] && [ -x "${ADB}" ]; then
-    echo "${ADB}"
-    return
-  fi
-  if [ -n "${ANDROID_SDK_ROOT:-}" ] && [ -x "${ANDROID_SDK_ROOT}/platform-tools/adb" ]; then
-    echo "${ANDROID_SDK_ROOT}/platform-tools/adb"
-    return
-  fi
-  if [ -x "/mnt/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe" ]; then
-    echo "/mnt/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe"
-    return
-  fi
-  return 1
-}
-
-find_ndk() {
-  if [ -n "${ANDROID_NDK_HOME:-}" ] && [ -d "${ANDROID_NDK_HOME}" ]; then
-    echo "${ANDROID_NDK_HOME}"
-    return
-  fi
-  if [ -n "${ANDROID_SDK_ROOT:-}" ] && [ -d "${ANDROID_SDK_ROOT}/ndk" ]; then
-    local latest
-    latest="$(ls -1 "${ANDROID_SDK_ROOT}/ndk" 2>/dev/null | sort -V | tail -n1)"
-    if [ -n "$latest" ] && [ -d "${ANDROID_SDK_ROOT}/ndk/${latest}" ]; then
-      echo "${ANDROID_SDK_ROOT}/ndk/${latest}"
-      return
-    fi
-  fi
-  if [ -d "$HOME/Android/Sdk/ndk" ]; then
-    local latest_home
-    latest_home="$(ls -1 "$HOME/Android/Sdk/ndk" 2>/dev/null | sort -V | tail -n1)"
-    if [ -n "$latest_home" ] && [ -d "$HOME/Android/Sdk/ndk/${latest_home}" ]; then
-      echo "$HOME/Android/Sdk/ndk/${latest_home}"
-      return
-    fi
-  fi
-  return 1
-}
 
 main() {
   local fail=0

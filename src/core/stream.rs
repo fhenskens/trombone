@@ -90,7 +90,7 @@ impl Stream {
     }
 
     /// Create a new stopped stream with backend hooks and callback handle.
-    #[cfg(target_os = "android")]
+    #[cfg(any(target_os = "android", target_os = "windows", target_os = "linux"))]
     pub(crate) fn with_backend_and_callback(
         config: StreamConfig,
         backend: Box<dyn StreamBackendOps>,
@@ -305,6 +305,8 @@ mod tests {
                     frame_position: Some(654),
                     estimated_latency_frames: Some(64),
                     estimated_latency_ns: Some(1_333_333),
+                    negotiated_share_mode: None,
+                    negotiated_sample_format: None,
                 },
             }
         }
