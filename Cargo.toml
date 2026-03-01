@@ -1,10 +1,17 @@
 [package]
-name = "trombone"
+name = "trombone-audio"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
-description = "A pure Rust-first low-latency audio I/O library targeting Android and beyond."
+description = "Pure Rust audio I/O library targeting oboe-like performance across Android, Windows, and Linux."
 license = "Apache-2.0"
+repository = "https://github.com/fhenskens/trombone"
+readme = "README.md"
+keywords = ["audio", "realtime", "android", "wasapi", "pipewire"]
+categories = ["multimedia::audio"]
+
+[lib]
+name = "trombone"
 
 [features]
 default = []

@@ -688,7 +688,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "trombone"
+name = "trombone-audio"
 version = "0.1.0"
 dependencies = [
  "alsa",
