@@ -11,7 +11,7 @@ This file explains how to contribute.
 ## Setup
 
 ```bash
-git clone <your-fork-or-repo-url>
+git clone git@github.com:fhenskens/trombone.git
 cd trombone
 cargo check
 ```
